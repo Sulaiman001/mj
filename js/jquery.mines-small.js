@@ -1,0 +1,512 @@
+// todo: siam
+// the a_num_bombs_near array isn't populating the first row correctly. all 0s
+//
+var safe = "url(http://mj.wjsams.com/images/safe-small.png)";
+var question = "url(http://mj.wjsams.com/images/question-small.png)";
+var bomb = "url(http://mj.wjsams.com/images/bomb-small.png)";
+var empty = "rgb(128, 128, 128)";
+var a_number = new Array();
+a_number[1] = "url(http://mj.wjsams.com/images/1.png)";
+a_number[2] = "url(http://mj.wjsams.com/images/2.png)";
+a_number[3] = "url(http://mj.wjsams.com/images/3.png)";
+a_number[4] = "url(http://mj.wjsams.com/images/4.png)";
+a_number[5] = "url(http://mj.wjsams.com/images/5.png)";
+a_number[6] = "url(http://mj.wjsams.com/images/6.png)";
+a_number[7] = "url(http://mj.wjsams.com/images/7.png)";
+a_number[8] = "url(http://mj.wjsams.com/images/8.png)";
+// cell_holder lets you know which image type was set for the cell for the cell_click function.
+cell_holder = "";
+var nrow = 10;
+var ncol = 10;
+var difficulty = 0.10;
+var game_over = false;
+
+$(document).ready(function()
+{
+	draw_grid(nrow, ncol);
+});
+
+function set_start_time()
+{
+        $.ajax({
+                type: "POST",  
+                url: "ajax.php",  
+                data: "action=set_time_start",
+        });
+}
+
+function draw_grid(nrow, ncol)
+{
+	a_is_open = mkmultarray(nrow, ncol);
+	a_bombs = mkmultarray(nrow, ncol);
+	a_num_bombs_near = mkmultarray(nrow, ncol);
+	num_bombs = Math.ceil((nrow * ncol) * difficulty);
+	cells_open = 0;
+	num_cells_open_to_win = (nrow * ncol) - num_bombs;
+
+	var num_bombs_set = 0;
+
+	var output = "";
+	output += "<div id=\"grid_table\">";
+	for(i=0; i<nrow; i++)
+	{
+		for(j=0; j<ncol; j++)
+		{
+			a_is_open[i][j] = false;
+			if(rand(1, num_bombs) == num_bombs)
+			{
+				a_bombs[i][j] = true;
+			}
+			else
+			{
+				a_bombs[i][j] = false;
+			}
+			output += "<div id=\"cell" + i + "_" + j + "\" class=\"cell\" onmousedown=\"cell_click(event, this)\"></div>\n";
+		}
+		output += "<div class=\"clear\"></div>";
+	}
+	output += "</div>";
+
+	// set bombs
+	// set all default values to false, because null doesn't work
+	for(i=0; i<nrow; i++)
+	{
+		for(j=0; j<ncol; j++)
+		{
+			a_bombs[i][j] = false;
+		}
+	}
+	while(num_bombs_set < num_bombs)
+	{
+		for(i=0; i<nrow; i++)
+		{
+			for(j=0; j<ncol; j++)
+			{
+				if(num_bombs_set < num_bombs)
+				{
+					if(rand(1, num_bombs) == num_bombs)
+					{
+						if(a_bombs[i][j] != true)
+						{
+							a_bombs[i][j] = true;
+							num_bombs_set = num_bombs_set + 1;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// create an array with each entry being the number of bombs around that entry
+	// set all default values to false, because null doesn't work
+	for(i=0; i<nrow; i++)
+	{
+		for(j=0; j<ncol; j++)
+		{
+			a_num_bombs_near[i][j] = 0;
+		}
+	}
+	for(i=0; i<nrow; i++)
+	{
+		for(j=0; j<ncol; j++)
+		{
+			//a_num_bombs_near
+			var ni = i - 1; 
+			var nj = j;
+			var nei = i - 1;
+			var nej = j + 1;
+			var ei = i;
+			var ej = j + 1;
+			var sei = i + 1;
+			var sej = j + 1;
+			var si = i + 1;
+			var sj = j;
+			var swi = i + 1;
+			var swj = j - 1
+			var wi = i;
+			var wj = j - 1;
+			var nwi = i - 1;
+			var nwj = j - 1;
+
+			if(ni >= 0 && ni < nrow && nj >= 0 && nj < ncol)
+			{
+				if(a_bombs[ni][nj] == true)
+				{
+					a_num_bombs_near[i][j] = a_num_bombs_near[i][j] + 1;
+				}
+			}
+			if(nei >= 0 && nei < nrow && nej >= 0 && nej < ncol)
+			{
+				if(a_bombs[nei][nej] == true)
+				{
+					a_num_bombs_near[i][j] = a_num_bombs_near[i][j] + 1;
+				}
+			}
+			if(ei >= 0 && ei < nrow && ej >= 0 && ej < ncol)
+			{
+				if(a_bombs[ei][ej] == true)
+				{
+					a_num_bombs_near[i][j] = a_num_bombs_near[i][j] + 1;
+				}
+			}
+			if(sei >= 0 && sei < nrow && sej >= 0 && sej < ncol)
+			{
+				if(a_bombs[sei][sej] == true)
+				{
+					a_num_bombs_near[i][j] = a_num_bombs_near[i][j] + 1;
+				}
+			}
+			if(si >= 0 && si < nrow && sj >= 0 && sj < ncol)
+			{
+				if(a_bombs[si][sj] == true)
+				{
+					a_num_bombs_near[i][j] = a_num_bombs_near[i][j] + 1;
+				}
+			}
+			if(swi >= 0 && swi < nrow && swj >= 0 && swj < ncol)
+			{
+				if(a_bombs[swi][swj] == true)
+				{
+					a_num_bombs_near[i][j] = a_num_bombs_near[i][j] + 1;
+				}
+			}
+			if(wi >= 0 && wi < nrow && wj >= 0 && wj < ncol)
+			{
+				if(a_bombs[wi][wj] == true)
+				{
+					a_num_bombs_near[i][j] = a_num_bombs_near[i][j] + 1;
+				}
+			}
+			if(nwi >= 0 && nwi < nrow && nwj >= 0 && nwj < ncol)
+			{
+				if(a_bombs[nwi][nwj] == true)
+				{
+					a_num_bombs_near[i][j] = a_num_bombs_near[i][j] + 1;
+				}
+			}
+			if(i >= 0 && i < nrow && j >= 0 && j < ncol)
+			{
+				if(a_bombs[i][j] == true)
+				{
+					a_num_bombs_near[i][j] = a_num_bombs_near[i][j] + 1;
+				}
+			}
+		}
+	}
+
+	$("div#grid").html(output);
+	apply_css_default_style();
+	// start: debug //
+	//for(i=0; i<nrow; i++)
+	//{
+	//	for(j=0; j<ncol; j++)
+	//	{
+	//		if(a_bombs[i][j] == true)
+	//		{
+	//			$("div#cell" + i + "_" + j).css("background-image", bomb).css("background-repeat", "no-repeat").css("background-position", "50% 50%");
+	//		}
+	//		//$("div#cell" + i + "_" + j).html(a_num_bombs_near[i][j]);
+	//	}
+	//}
+	// end: debug //
+}
+
+function rand(min, max)
+{
+	// http://kevin.vanzonneveld.net
+	// +   original by: Leslie Hoare
+	// +   bugfixed by: Onno Marsman
+	// %          note 1: See the commented out code below for a version which will work with our experimental (though probably unnecessary) srand() function)
+	// *     example 1: rand(1, 1);
+	// *     returns 1: 1
+	var argc = arguments.length;
+	if(argc === 0)
+	{
+		min = 0;
+		max = 2147483647;
+	}
+	else if(argc === 1)
+	{
+		throw new Error('Warning: rand() expects exactly 2 parameters, 1 given');
+	}
+	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+
+function mkmultarray(nrow, ncol)
+{
+	var a_array = new Array();
+	for(i=0; i<nrow; i++)
+	{
+		a_array[i] = new Array();
+		for(j=0; j<ncol; j++)
+		{
+			a_array[i][j] = null;
+		}
+	}
+	return a_array;
+}
+
+function get_i(str)
+{
+	var regex = new RegExp("^cell([0-9]+)_([0-9]+)$");
+	var i = str.replace(regex, "$1");
+	return i;
+}
+
+function get_j(str)
+{
+	var regex = new RegExp("^cell([0-9]+)_([0-9]+)$");
+	var j = str.replace(regex, "$2");
+	return j;
+}
+
+function cell_click(event, e)
+{
+	if(!game_over)
+	{
+		if(event.button == "0")
+		{
+			// Left click is button "0"
+			var i = get_i($(e).attr("id"));
+			var j = get_j($(e).attr("id"));
+			// clear cells before you set it to true
+			var is_game_over = clear_cells(i, j);
+			if(is_game_over)
+			{
+				// make sure to set this true after you clear cells
+				a_is_open[i][j] = true;
+				// change the background back to null in case a flag was on it
+				$(e).css("background-image", null);
+				// start: debug //
+				//$(e).css("background-image", bomb).css("background-repeat", "no-repeat").css("background-position", "50% 50%");
+				// end: debug //
+			}
+		}
+		else if(event.button == "2")
+		{
+			// Initialize is_flagged for the cell
+			if(!$(e).data("is_flagged"))
+			{
+				$(e).data("is_flagged", false);
+			}
+
+			// Set the flag and question backgrounds on right click
+			if($(e).data("is_flagged") == false)
+			{
+				$(e).data("is_flagged", true);
+				$(e).css("background-image", safe).css("background-repeat", "no-repeat").css("background-position", "50% 50%");
+				cell_holder = "safe";
+			}
+			else if(cell_holder == "safe")
+			{
+				$(e).data("is_flagged", true);
+				$(e).css("background-image", question).css("background-repeat", "no-repeat").css("background-position", "50% 50%");
+				cell_holder = "question";
+			}
+			else if(cell_holder == "question")
+			{
+				$(e).data("is_flagged", false);
+				$(e).css("background-image", null);
+				cell_holder = null;
+			}
+		}
+	}
+}
+
+function show_bombs()
+{
+	for(i=0; i<nrow; i++)
+	{
+		for(j=0; j<ncol; j++)
+		{
+			$("div#cell" + i + "_" + j).css("background-color", "silver");
+			if(a_bombs[i][j] == true)
+			{
+				$("div#cell" + i + "_" + j).css("background-image", bomb).css("background-repeat", "no-repeat").css("background-position", "50% 50%");
+			}
+			else if(a_num_bombs_near[i][j] > 0)
+			{
+				$("div#cell" + i + "_" + j).html(a_num_bombs_near[i][j]);
+			}
+			else
+			{
+				$("div#cell" + i + "_" + j).css("background-image", null);
+			}
+		}
+	}
+}
+
+function clear_cells(i, j)
+{
+	i = parseFloat(i);
+	j = parseFloat(j);
+	if(a_is_open[i][j] == false)
+	{
+		// open this cell so clear_cells() will not try to open it again.
+		a_is_open[i][j] = true;
+		// increase the opened cells count.
+		cells_open++;
+
+		// check for game win
+		if(cells_open > 0 && cells_open == num_cells_open_to_win)
+		{
+			if(a_num_bombs_near[i][j] === 0)
+			{
+				$("div#cell" + i + "_" + j).html(" ").css("background-color", "silver");
+			}
+			else if (a_num_bombs_near[i][j] > 0)
+			{
+				$("div#cell" + i + "_" + j).html(a_num_bombs_near[i][j]).css("background-color", "silver").css("text-align", "center").css("vertical-align", "middle");
+				// display an image for the number in the cell for num_bombs_near
+				//$("div#cell" + i + "_" + j).css("background-color", "silver").css("text-align", "center").css("vertical-align", "middle").css("background-image", a_number[a_num_bombs_near[i][j]]).css("background-repeat", "no-repeat").css("background-position", "50% 50%");
+			}
+
+			var is_new_game = confirm("You won!!! Would you like to play again?");
+			if(is_new_game == true)
+			{
+				game_over = false;
+				draw_grid(nrow, ncol);
+			}
+			else
+			{
+				// do nothing, game over
+			}
+			return false;
+		}
+
+		// must check north, south, east and west but none of the corner blocks
+		// if they are not bombs, open them
+		// also make sure to check if it's a border block to not check any negative margins, or margins greater than nrow or ncol
+		if(a_bombs[i][j] == true)
+		{
+			game_over = true;
+			show_bombs();
+			var is_new_game = confirm("You lost!!! Would you like to play again?");
+			if(is_new_game == true)
+			{
+				game_over = false;
+				draw_grid(nrow, ncol);
+			}
+			else
+			{
+				// do nothing, game over
+			}
+			return false;
+		}
+		else if(a_num_bombs_near[i][j] === 0)
+		{
+			var ni = i - 1; 
+			var nj = j;
+			var ei = i;
+			var ej = j + 1;
+			var si = i + 1;
+			var sj = j;
+			var wi = i;
+			var wj = j - 1;
+			var nei = i - 1;
+			var nej = j + 1;
+			var sei = i + 1;
+			var sej = j + 1;
+			var swi = i + 1;
+			var swj = j - 1
+			var nwi = i - 1;
+			var nwj = j - 1;
+
+			$("div#cell" + i + "_" + j).html(" ").css("background-color", "silver");
+			if(ni >= 0 && ni < nrow && nj >= 0 && nj < ncol)
+			{
+				clear_cells(ni, nj);
+			}
+			if(ei >= 0 && ei < nrow && ej >= 0 && ej < ncol)
+			{	
+				clear_cells(ei, ej);
+			}
+			if(si >= 0 && si < nrow && sj >= 0 && sj < ncol)
+			{
+				clear_cells(si, sj);
+			}
+			if(wi >= 0 && wi < nrow && wj >= 0 && wj < ncol)
+			{
+				clear_cells(wi, wj);
+			}
+			if(nei >= 0 && nei < nrow && nej >= 0 && nej < ncol)
+			{
+				clear_cells(nei, nej);
+			}
+			if(sei >= 0 && sei < nrow && sej >= 0 && sej < ncol)
+			{
+				clear_cells(sei, sej);
+			}
+			if(swi >= 0 && swi < nrow && swj >= 0 && swj < ncol)
+			{
+				clear_cells(swi, swj);
+			}
+			if(nwi >= 0 && nwi < nrow && nwj >= 0 && nwj < ncol)
+			{
+				clear_cells(nwi, nwj);
+			}
+		}
+		else if(a_num_bombs_near[i][j] > 0)
+		{
+			$("div#cell" + i + "_" + j).html(a_num_bombs_near[i][j]).css("background-color", "silver").css("text-align", "center").css("vertical-align", "middle");
+			// display an image for the number in the cell for num_bombs_near
+			//$("div#cell" + i + "_" + j).css("background-color", "silver").css("text-align", "center").css("vertical-align", "middle").css("background-image", a_number[a_num_bombs_near[i][j]]).css("background-repeat", "no-repeat").css("background-position", "50% 50%");
+		}
+	}
+	else
+	{
+		// do nothing in this case
+		// the cell has already been opened
+	}
+	return true;
+}
+
+function intval( mixed_var, base ) {
+    // Get the integer value of a variable using the optional base for the conversion  
+    // 
+    // version: 905.412
+    // discuss at: http://phpjs.org/functions/intval
+    // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+    // +   improved by: stensi
+    // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+    // *     example 1: intval('Kevin van Zonneveld');
+    // *     returns 1: 0
+    // *     example 2: intval(4.2);
+    // *     returns 2: 4
+    // *     example 3: intval(42, 8);
+    // *     returns 3: 42
+    // *     example 4: intval('09');
+    // *     returns 4: 9
+    var tmp;
+
+    var type = typeof( mixed_var );
+
+    if(type == 'boolean'){
+        if (mixed_var == true) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else if(type == 'string'){
+        tmp = parseInt(mixed_var * 1, 10);
+        if(isNaN(tmp) || !isFinite(tmp)){
+            return 0;
+        } else{
+            return tmp.toString(base || 10);
+        }
+    } else if(type == 'number' && isFinite(mixed_var) ){
+        return Math.floor(mixed_var);
+    } else{
+        return 0;
+    }
+}
+
+///
+// CSS Styles
+///
+function apply_css_default_style()
+{
+	$("div.cell").css("border", "1px solid #404040").css("background-color", "gray").css("width", "18px").css("height", "18px").css("text-align", "center").css("float", "left");
+	$("div.clear").css("width", "0").css("height", "0").css("margin", "0").css("padding", "0").css("clear", "both");
+}
